@@ -1,39 +1,53 @@
-// Fetch current silver price (USD per troy ounce) from a free API
+// Current silver price (USD per troy ounce) - updated manually if API fails
+const FALLBACK_PRICE_PER_OZ = 23.00; // Update this with today's price
+
 async function fetchSilverPrice() {
     try {
-        const response = await fetch("https://api.metals.live/v1/spot/silver");
+        // API 1: Metals-API (requires free API key)
+        // const apiKey = "YOUR_FREE_API_KEY"; // Get one: https://metals-api.com/
+        // const response = await fetch(`https://metals-api.com/api/latest?access_key=${apiKey}&base=XAG&symbols=USD`);
+        // const data = await response.json();
+        // return data.rates.USD;
+
+        // API 2: CoinGecko (no key, but less precise)
+        const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=silver&vs_currencies=usd");
         const data = await response.json();
-        return data.price; // Returns price per troy ounce
+        return data.silver.usd * 31.1035; // Convert from per-gram to per-troy-oz
+
     } catch (error) {
-        console.error("Failed to fetch silver price:", error);
-        return 23.00; // Fallback price (replace with current manual value if API fails)
+        console.error("API failed, using fallback price:", error);
+        return FALLBACK_PRICE_PER_OZ;
     }
 }
 
-// Convert grams to troy ounces (1 troy ounce = 31.1035 grams)
-function gramsToTroyOunces(grams) {
-    return grams / 31.1035;
-}
-
-// Calculate the total value
-async function calculateValue() {
+function calculateValue() {
     const grams = parseFloat(document.getElementById("grams").value);
-    if (isNaN(grams) || grams <= 0) {
-        document.getElementById("result").innerHTML = "Please enter a valid number!";
+    const resultDiv = document.getElementById("result");
+    const priceDiv = document.getElementById("price-per-gram");
+
+    if (!grams || grams <= 0) {
+        resultDiv.innerHTML = "⚠️ Please enter valid grams!";
         return;
     }
 
-    const pricePerOz = await fetchSilverPrice();
-    const troyOunces = gramsToTroyOunces(grams);
-    const totalValue = (troyOunces * pricePerOz).toFixed(2);
+    fetchSilverPrice().then(pricePerOz => {
+        // Calculate price per gram and total value
+        const pricePerGram = pricePerOz / 31.1035;
+        const totalValue = grams * pricePerGram;
 
-    document.getElementById("result").innerHTML = 
-        `${grams} grams of silver ≈ <strong>$${totalValue} USD</strong>`;
-    document.getElementById("price-per-gram").innerHTML = 
-        `Current price: $${(pricePerOz / 31.1035).toFixed(4)} per gram`;
+        // Display results
+        resultDiv.innerHTML = `
+            ${grams} grams of silver = <strong>$${totalValue.toFixed(2)} USD</strong>
+        `;
+        priceDiv.innerHTML = `
+            Current price: <strong>$${pricePerGram.toFixed(4)}/gram</strong><br>
+            ($${pricePerOz.toFixed(2)} per troy ounce)
+        `;
+    });
 }
 
-// Initialize
-document.addEventListener("DOMContentLoaded", () => {
-    calculateValue(); // Optional: Display price on load
+// Debug
+console.log("Script loaded!");
+document.getElementById("grams").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") calculateValue();
 });
