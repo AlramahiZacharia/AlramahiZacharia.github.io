@@ -2,29 +2,9 @@
 const FALLBACK_PRICE_PER_OZ = 30.50; // Example: $28.50/troy oz (update to today's price)
 
 async function fetchSilverPrice() {
-    try {
-        // API: CoinGecko (free, no API key needed)
-        const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=silver&vs_currencies=usd");
-        const data = await response.json();
-
-        if (!data.silver || !data.silver.usd) {
-            throw new Error("Invalid API response");
-        }
-
-        // CoinGecko returns price per gram, convert to troy oz
-        const pricePerGram = data.silver.usd;
-        const pricePerTroyOz = pricePerGram * 31.1035; // 1 troy oz = 31.1035g
-        return { pricePerGram, pricePerTroyOz };
-
-    } catch (error) {
-        console.error("API Error:", error);
-        // Use fallback price (manually updated)
-        const pricePerGram = FALLBACK_PRICE_PER_OZ / 31.1035;
-        return {
-            pricePerGram: pricePerGram,
-            pricePerTroyOz: FALLBACK_PRICE_PER_OZ
-        };
-    }
+    const pricePerTroyOz = 36.30; // Manually update this
+    const pricePerGram = pricePerTroyOz / 31.1035;
+    return { pricePerGram, pricePerTroyOz };
 }
 
 function calculateValue() {
