@@ -1,5 +1,5 @@
 // Current silver price (USD per troy ounce) - updated manually if API fails
-const FALLBACK_PRICE_PER_OZ = 23.00; // Update this with today's price
+const FALLBACK_PRICE_PER_OZ = 30.00; // Update this with today's price
 
 async function fetchSilverPrice() {
     try {
