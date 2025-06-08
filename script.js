@@ -1,22 +1,29 @@
-// Current silver price (USD per troy ounce) - updated manually if API fails
-const FALLBACK_PRICE_PER_OZ = 30.00; // Update this with today's price
+// Fallback price (manually update this if API fails)
+const FALLBACK_PRICE_PER_OZ = 30.50; // Example: $28.50/troy oz (update to today's price)
 
 async function fetchSilverPrice() {
     try {
-        // API 1: Metals-API (requires free API key)
-        // const apiKey = "YOUR_FREE_API_KEY"; // Get one: https://metals-api.com/
-        // const response = await fetch(`https://metals-api.com/api/latest?access_key=${apiKey}&base=XAG&symbols=USD`);
-        // const data = await response.json();
-        // return data.rates.USD;
-
-        // API 2: CoinGecko (no key, but less precise)
+        // API: CoinGecko (free, no API key needed)
         const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=silver&vs_currencies=usd");
         const data = await response.json();
-        return data.silver.usd * 31.1035; // Convert from per-gram to per-troy-oz
+
+        if (!data.silver || !data.silver.usd) {
+            throw new Error("Invalid API response");
+        }
+
+        // CoinGecko returns price per gram, convert to troy oz
+        const pricePerGram = data.silver.usd;
+        const pricePerTroyOz = pricePerGram * 31.1035; // 1 troy oz = 31.1035g
+        return { pricePerGram, pricePerTroyOz };
 
     } catch (error) {
-        console.error("API failed, using fallback price:", error);
-        return FALLBACK_PRICE_PER_OZ;
+        console.error("API Error:", error);
+        // Use fallback price (manually updated)
+        const pricePerGram = FALLBACK_PRICE_PER_OZ / 31.1035;
+        return {
+            pricePerGram: pricePerGram,
+            pricePerTroyOz: FALLBACK_PRICE_PER_OZ
+        };
     }
 }
 
@@ -30,9 +37,7 @@ function calculateValue() {
         return;
     }
 
-    fetchSilverPrice().then(pricePerOz => {
-        // Calculate price per gram and total value
-        const pricePerGram = pricePerOz / 31.1035;
+    fetchSilverPrice().then(({ pricePerGram, pricePerTroyOz }) => {
         const totalValue = grams * pricePerGram;
 
         // Display results
@@ -40,14 +45,14 @@ function calculateValue() {
             ${grams} grams of silver = <strong>$${totalValue.toFixed(2)} USD</strong>
         `;
         priceDiv.innerHTML = `
-            Current price: <strong>$${pricePerGram.toFixed(4)}/gram</strong><br>
-            ($${pricePerOz.toFixed(2)} per troy ounce)
+            Price per gram: <strong>$${pricePerGram.toFixed(4)}</strong><br>
+            Price per troy oz: <strong>$${pricePerTroyOz.toFixed(2)}</strong>
         `;
     });
 }
 
-// Debug
-console.log("Script loaded!");
+// Debugging & extra features
+console.log("Script loaded!"); // Check browser console
 document.getElementById("grams").addEventListener("keypress", (e) => {
     if (e.key === "Enter") calculateValue();
 });
