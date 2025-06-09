@@ -2,7 +2,9 @@
 const FALLBACK_PRICE_PER_OZ = 30.50; // Example: $28.50/troy oz (update to today's price)
 
 async function fetchSilverPrice() {
-    const pricePerTroyOz = 36.30; // Manually update this
+    const pricePerTroyOz = await fetch(
+    `https://query1.finance.yahoo.com/v8/finance/chart/SI=F` // Replace AMZN with any ticker
+  ); // Manually update this
     const pricePerGram = pricePerTroyOz / 31.1035;
     return { pricePerGram, pricePerTroyOz };
 }
