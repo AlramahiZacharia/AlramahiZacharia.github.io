@@ -1,71 +1,76 @@
-// Current silver price (update this manually if needed)
-const FALLBACK_PRICE_PER_OZ = 28.50; // Update this value occasionally
+// 1. CONFIGURATION (update these as needed)
+const FALLBACK_PRICE_PER_OZ = 28.50; // Manual fallback (update weekly)
+const CACHE_MINUTES = 15; // How long to cache prices
 
-async function fetchSilverPrice() {
-  // Try 3 different methods until one works
+// 2. Main Price Fetching Function
+async function getSilverPrice() {
+  // Try cached price first
+  const cached = getCachedPrice();
+  if (cached) return cached;
+
+  // Try MetalPriceAPI (most reliable free tier)
   try {
-    // Method 1: CoinGecko API (usually works)
-    const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=silver&vs_currencies=usd");
+    const response = await fetch('https://api.metalpriceapi.com/v1/latest?api_key=silver&base=XAG&currencies=USD');
     const data = await response.json();
-    if (data.silver?.usd) {
-      const pricePerGram = data.silver.usd;
-      return {
-        pricePerGram: pricePerGram,
-        pricePerTroyOz: pricePerGram * 31.1035,
-        source: "Live (CoinGecko)"
-      };
+    
+    if (data.rates?.USD) {
+      const pricePerOz = 1 / data.rates.USD; // Their API returns USD per XAG
+      cachePrice(pricePerOz);
+      return pricePerOz;
     }
-  } catch (e) {}
+  } catch (error) {
+    console.log("API failed, trying fallback...");
+  }
 
-  try {
-    // Method 2: Metals-API (no key needed for silver)
-    const response = await fetch("https://api.metals.live/v1/spot/silver");
-    const data = await response.json();
-    if (data.price) {
-      return {
-        pricePerGram: data.price / 31.1035,
-        pricePerTroyOz: data.price,
-        source: "Live (Metals-API)"
-      };
-    }
-  } catch (e) {}
-
-  // Method 3: Fallback (always works)
-  return {
-    pricePerGram: FALLBACK_PRICE_PER_OZ / 31.1035,
-    pricePerTroyOz: FALLBACK_PRICE_PER_OZ,
-    source: "Fallback (manual)"
-  };
+  // Final fallback
+  return FALLBACK_PRICE_PER_OZ;
 }
 
+// 3. Cache Helpers (stores prices in browser)
+function getCachedPrice() {
+  const cache = localStorage.getItem('silverPrice');
+  if (!cache) return null;
+  
+  const { price, timestamp } = JSON.parse(cache);
+  const ageMinutes = (Date.now() - timestamp) / 60000;
+  
+  return ageMinutes < CACHE_MINUTES ? price : null;
+}
+
+function cachePrice(price) {
+  localStorage.setItem('silverPrice', JSON.stringify({
+    price: price,
+    timestamp: Date.now()
+  }));
+}
+
+// 4. Calculation Function
 async function calculateValue() {
-  const grams = parseFloat(document.getElementById("grams").value);
-  const resultDiv = document.getElementById("result");
-  const priceDiv = document.getElementById("price-info");
+  const grams = parseFloat(document.getElementById('grams').value);
+  const resultDiv = document.getElementById('result');
+  const priceDiv = document.getElementById('price-info');
 
   if (!grams || grams <= 0) {
-    resultDiv.innerHTML = "⚠ Please enter valid grams";
+    resultDiv.innerHTML = '⚠ Please enter valid grams';
     return;
   }
 
-  resultDiv.innerHTML = "🔄 Calculating...";
+  resultDiv.innerHTML = '🔄 Calculating...';
   
-  try {
-    const { pricePerGram, pricePerTroyOz, source } = await fetchSilverPrice();
-    const value = (grams * pricePerGram).toFixed(2);
-    
-    resultDiv.innerHTML = `${grams}g silver = <strong>$${value}</strong>`;
-    priceDiv.innerHTML = `
-      Price: $${pricePerGram.toFixed(4)}/g ($${pricePerTroyOz.toFixed(2)}/oz)<br>
-      <small>Source: ${source} | ${new Date().toLocaleTimeString()}</small>
-    `;
-  } catch (error) {
-    resultDiv.innerHTML = "⚠ Network error - try again later";
-    console.error("Calculation failed:", error);
-  }
+  const pricePerOz = await getSilverPrice();
+  const pricePerGram = pricePerOz / 31.1035;
+  const value = (grams * pricePerGram).toFixed(2);
+
+  resultDiv.innerHTML = `${grams}g silver = <strong>$${value}</strong>`;
+  priceDiv.innerHTML = `
+    Rate: $${pricePerGram.toFixed(4)}/g ($${pricePerOz.toFixed(2)}/oz)<br>
+    <small>${pricePerOz === FALLBACK_PRICE_PER_OZ ? 'Fallback price' : 'Live price'} • Updated: ${new Date().toLocaleTimeString()}</small>
+  `;
 }
 
-// Handle Enter key
-document.getElementById("grams").addEventListener("keypress", (e) => {
-  if (e.key === "Enter") calculateValue();
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('grams').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') calculateValue();
+  });
 });
