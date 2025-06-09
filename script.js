@@ -4,18 +4,20 @@ const FALLBACK_PRICE_PER_GRAM = FALLBACK_PRICE_PER_OZ / 31.1035;
 
 async function fetchSilverPrice() {
     try {
-        // Note: Yahoo Finance API blocks direct browser requests due to CORS
-        // You'll need a CORS proxy or backend service for this to work
-        const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/SI=F`);
+        // Use a CORS proxy
+        const proxyUrl = "https://cors-anywhere.herokuapp.com/"; // Free public proxy
+        const targetUrl = "https://query1.finance.yahoo.com/v8/finance/chart/SI=F";
+        
+        const response = await fetch(proxyUrl + targetUrl);
         const data = await response.json();
         
-        // Extract price from Yahoo's complex response structure
+        // Extract price (Yahoo Finance format)
         const pricePerTroyOz = data.chart.result[0].meta.regularMarketPrice;
         const pricePerGram = pricePerTroyOz / 31.1035;
         
         return { pricePerGram, pricePerTroyOz };
     } catch (error) {
-        console.error("Failed to fetch silver price:", error);
+        console.error("API failed:", error);
         return {
             pricePerGram: FALLBACK_PRICE_PER_GRAM,
             pricePerTroyOz: FALLBACK_PRICE_PER_OZ
