@@ -8,7 +8,7 @@ async function getSilverPrice() {
         return data.rates["XAG"]; // Silver price per gram
     } catch (error) {
         console.error("Error fetching silver price:", error);
-        return 1.00; // Fallback price
+        return 1.18; // Fallback price
     }
 }
 
