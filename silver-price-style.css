@@ -19,31 +19,26 @@ h1 {
     margin-bottom: 20px;
 }
 
-#display {
-    width: 100%;
+input {
+    width: 80%;
     padding: 10px;
-    font-size: 1.5em;
-    text-align: right;
-    border: none;
-    background: #D3D3D3;
-}
-
-.buttons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-top: 10px;
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 
 button {
     font-size: 1.2em;
-    padding: 15px;
+    padding: 10px;
     border: none;
     background: #B0C4DE;
     cursor: pointer;
-    transition: 0.3s;
 }
 
 button:hover {
     background: #ADD8E6;
+}
+
+p {
+    font-size: 1.5em;
+    margin-top: 10px;
 }
